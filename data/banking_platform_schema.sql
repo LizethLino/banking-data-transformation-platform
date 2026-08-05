@@ -5,6 +5,8 @@ DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS branches;
+DROP TABLE IF EXISTS cities;
+DROP TABLE IF EXISTS states;
 DROP TABLE IF EXISTS regions;
 --DROP TABLE IF EXISTS employees;
 --DROP TABLE IF EXISTS loans;
@@ -13,17 +15,34 @@ DROP TABLE IF EXISTS regions;
 
 CREATE TABLE regions(
 	region_id SERIAL PRIMARY KEY,
-	region_name VARCHAR(50) NOT NULL UNIQUE, --northeast, southeast, midwest, etc. Can be used for advanced analytics later
+	region_name VARCHAR(50) NOT NULL UNIQUE, --northeast, south, midwest, etc. Can be used for advanced analytics later
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE states(
+	state_code CHAR(2) PRIMARY KEY, -- ex. nj,ny,etc. Since its already unique theoretically we dont need another id
+	state_name VARCHAR(50) NOT NULL UNIQUE,
+	region_id INTEGER NOT NULL REFERENCES regions(region_id),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cities(
+	city_id SERIAL PRIMARY KEY,
+	city_name VARCHAR(50) NOT NULL,
+	state_code CHAR(2) NOT NULL REFERENCES states(state_code),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	--cities can have the same name but there shouldnt be multiple cities with the same name in a singular state
+	UNIQUE (city_name, state_code)
+);
+
 CREATE TABLE branches(
 	branch_id SERIAL PRIMARY KEY,
-	region_id INTEGER NOT NULL REFERENCES regions(region_id),
-	branch_name VARCHAR(100) NOT NULL,
-	city VARCHAR(100) NOT NULL,
-	state CHAR(2) NOT NULL,
+	branch_name VARCHAR(100) NOT NULL UNIQUE, --ideally we want a unique branch_name but later we can add branch_code instead
+	city_id INTEGER NOT NULL REFERENCES cities(city_id),
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

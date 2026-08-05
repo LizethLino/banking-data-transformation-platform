@@ -5,8 +5,12 @@
 --   1. Regions
 --   2. States
 --   3. Cities
+--   4. Address Types
+--   5. Account Types
+--   6. Account Statuses
+--   7. Account Products
 --
--- This file should be run after schema.sql and before generate_data.py
+-- This file should be run after banking_platform_schema.sql and before generate_data.py
 -- ============================================================
 
 
@@ -516,5 +520,137 @@ VALUES
     ('Gillette', 'WY'),
     ('Rock Springs', 'WY')
 
-
 ON CONFLICT (city_name, state_code) DO NOTHING;
+
+
+
+-- ADDRESS TYPES
+
+INSERT INTO address_types (address_type_name, address_description)
+VALUES
+    ('Home', 'Residential address for personal use.'),
+    ('Work', 'Customer employment or business address.'),
+    ('Mailing', 'Address used for receiving mail.')
+
+ON CONFLICT (address_type_name) DO NOTHING;
+
+
+
+-- ACCOUNT TYPES
+
+INSERT INTO account_types (account_type_name, account_type_description)
+VALUES
+    ('Checking', 'A type of bank account that allows for frequent transactions and easy access to funds.'),
+    ('Savings', 'A type of bank account that earns interest on the balance and is designed for saving money.'),
+    ('Credit', 'A type of bank account that allows for borrowing money up to a certain limit.')
+
+ON CONFLICT (account_type_name) DO NOTHING;
+
+
+
+-- ACCOUNT STATUSES
+
+INSERT INTO account_statuses (account_status_name, status_description)
+VALUES
+    ('Active', 'The account is currently active and in good standing.'),
+    ('Inactive', 'The account is not currently active.'),
+    ('Frozen', 'The account has been temporarily frozen and cannot be used.'),
+    ('Closed', 'The account has been closed.')
+
+ON CONFLICT (account_status_name) DO NOTHING;
+
+
+
+-- ACCOUNT PRODUCTS
+
+INSERT INTO account_products (
+    account_product_name,
+    account_type_id,
+    interest_rate,
+    monthly_fee,
+    minimum_balance,
+    maximum_credit_limit,
+    is_active,
+    account_product_description
+)
+SELECT
+    'Basic Checking',
+    account_type_id,
+    0.00,
+    0.00,
+    0.00,
+    NULL::NUMERIC,
+    TRUE,
+    'Basic checking account with no monthly maintenance fee'
+FROM account_types
+WHERE account_type_name = 'Checking'
+
+UNION ALL
+
+SELECT
+    'Premium Checking',
+    account_type_id,
+    0.10,
+    15.00,
+    1500.00,
+    NULL::NUMERIC,
+    TRUE,
+    'Premium checking account with additional benefits and a monthly fee'
+FROM account_types
+WHERE account_type_name = 'Checking'
+
+UNION ALL
+
+SELECT
+    'Basic Savings',
+    account_type_id,
+    1.50,
+    0.00,
+    100.00,
+    NULL::NUMERIC,
+    TRUE,
+    'Standard savings account'
+FROM account_types
+WHERE account_type_name = 'Savings'
+
+UNION ALL
+
+SELECT
+    'High Yield Savings',
+    account_type_id,
+    4.00,
+    0.00,
+    500.00::NUMERIC,
+    NULL,
+    TRUE,
+    'Savings account offering a higher interest rate'
+FROM account_types
+WHERE account_type_name = 'Savings'
+
+UNION ALL
+
+SELECT
+    'Basic Credit Card',
+    account_type_id,
+    24.99,
+    0.00,
+    0.00,
+    5000.00,
+    TRUE,
+    'Standard revolving credit product'
+FROM account_types
+WHERE account_type_name = 'Credit'
+
+UNION ALL
+
+SELECT
+    'Premium Credit Card',
+    account_type_id,
+    19.99,
+    95.00,
+    0.00,
+    25000.00,
+    TRUE,
+    'Premium credit product with a higher maximum credit limit'
+FROM account_types
+WHERE account_type_name = 'Credit';

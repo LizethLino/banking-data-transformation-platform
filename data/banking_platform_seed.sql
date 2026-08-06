@@ -14,6 +14,7 @@
 --   10. Transaction Statuses
 --   11. Merchant Categories
 --   12. Merchants
+--   13. Employee Roles
 --
 -- This file should be run after banking_platform_schema.sql and before generate_data.py
 --============================================================================================================================
@@ -774,3 +775,23 @@ VALUES
 	('New Jersey MVC', 'New Jersey government motor vehicle agency.'),
 	('Uber', 'Transportation and delivery platform.'),
 	('Home Depot', 'Home improvement retailer.');
+
+
+--============================================================================================================================
+-- EMPLOYEE ROLES
+--============================================================================================================================
+
+INSERT INTO employee_roles (
+    employee_role_name,
+    role_description
+) VALUES
+    ('Branch Manager', 'Manages branch operations, employees, customer service, and branch performance.'),
+    ('Assistant Branch Manager', 'Supports the branch manager with daily operations and staff supervision.'),
+    ('Bank Teller', 'Handles routine customer transactions including deposits, withdrawals, and account services.'),
+    ('Customer Service Representative', 'Assists customers with account questions, requests, and general banking services.'),
+    ('Personal Banker', 'Works directly with customers to open accounts and provide personalized banking products and services.'),
+    ('Loan Officer', 'Assists customers with loan applications, credit evaluation, and lending decisions.'),
+    ('Relationship Manager', 'Manages ongoing relationships with customers and helps identify appropriate financial products and services.'),
+    ('Operations Specialist', 'Supports branch and banking operations including documentation, processing, and administrative tasks.'),
+    ('Compliance Specialist', 'Helps ensure banking activities comply with applicable laws, regulations, and internal policies.'),
+    ('Financial Analyst', 'Analyzes financial and operational data to support business and management decisions.');

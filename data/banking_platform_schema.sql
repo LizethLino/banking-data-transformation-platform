@@ -1,24 +1,38 @@
---SELECT version();
---SELECT current_database();
-
 DROP TABLE IF EXISTS balance_history;
+DROP TABLE IF EXISTS transaction_entries;
 DROP TABLE IF EXISTS transactions;
+DROP TABLE IF EXISTS merchants;
+DROP TABLE IF EXISTS merchant_categories;
+DROP TABLE IF EXISTS transaction_channels;
+DROP TABLE IF EXISTS transaction_statuses;
+DROP TABLE IF EXISTS transaction_types;
+
 DROP TABLE IF EXISTS accounts;
 DROP TABLE IF EXISTS account_products;
 DROP TABLE IF EXISTS account_types;
 DROP TABLE IF EXISTS account_statuses;
+
 DROP TABLE IF EXISTS customer_addresses;
 DROP TABLE IF EXISTS address_types;
 DROP TABLE IF EXISTS customers;
+
+DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS employee_roles;
+
 DROP TABLE IF EXISTS branches;
 DROP TABLE IF EXISTS addresses;
 DROP TABLE IF EXISTS cities;
 DROP TABLE IF EXISTS states;
 DROP TABLE IF EXISTS regions;
---DROP TABLE IF EXISTS employees;
 --DROP TABLE IF EXISTS loans;
 --DROP TABLE IF EXISTS loan_payments;
 --DROP TABLE IF EXISTS loan_applications;
+
+DROP TYPE IF EXISTS transaction_entry_type;
+
+--============================================================================================================================
+-- LOCATIONS
+--============================================================================================================================
 
 CREATE TABLE regions(
 	region_id SERIAL PRIMARY KEY,
@@ -57,14 +71,6 @@ CREATE TABLE addresses(
 	UNIQUE (street_address, city_id, postal_code)
 );
 
-CREATE TABLE address_types(
-	address_type_id SERIAL PRIMARY KEY,
-	address_type_name VARCHAR(30) NOT NULL UNIQUE,
-	address_description TEXT,
-	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
 --in real setting, branch_code would be the actual unique identifier but unique branch_name works for the project
 CREATE TABLE branches(
 	branch_id SERIAL PRIMARY KEY,
@@ -73,6 +79,42 @@ CREATE TABLE branches(
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+
+
+--============================================================================================================================
+-- EMPLOYEES
+--============================================================================================================================
+
+
+CREATE TABLE employee_roles(
+	employee_role_id SERIAL PRIMARY KEY,
+	employee_role_name VARCHAR(50) NOT NULL UNIQUE,
+	role_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE employees(
+	employee_id SERIAL PRIMARY KEY,
+	branch_id INTEGER NOT NULL REFERENCES branches(branch_id),
+	employee_role_id INTEGER NOT NULL REFERENCES employee_roles(employee_role_id),
+	employee_first_name VARCHAR(100) NOT NULL,
+	employee_last_name VARCHAR(100) NOT NULL,
+	hire_date DATE NOT NULL,
+	termination_date DATE,
+	salary NUMERIC(12,2) NOT NULL DEFAULT 0.00
+		CHECK (salary >= 0),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+	CHECK (termination_date IS NULL OR termination_date >= hire_date)
+);
+
+
+--============================================================================================================================
+-- CUSTOMERS
+--============================================================================================================================
+
 
 CREATE TABLE customers(
 	customer_id SERIAL PRIMARY KEY,
@@ -84,6 +126,14 @@ CREATE TABLE customers(
 		CHECK (annual_income >= 0),
 	credit_score INTEGER 
 		CHECK (credit_score BETWEEN 300 AND 850), --follows FICO score convention
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE address_types(
+	address_type_id SERIAL PRIMARY KEY,
+	address_type_name VARCHAR(30) NOT NULL UNIQUE,
+	address_description TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -104,6 +154,12 @@ CREATE UNIQUE INDEX unique_primary_address
 ON customer_addresses (customer_id)
 WHERE is_primary = TRUE;
 
+
+--============================================================================================================================
+-- ACCOUNTS
+--============================================================================================================================
+
+
 CREATE TABLE account_types(
 	account_type_id SERIAL PRIMARY KEY,
 	account_type_name VARCHAR(50) NOT NULL UNIQUE, --checking, savings, credit, etc (potentially add cd later)
@@ -115,7 +171,7 @@ CREATE TABLE account_types(
 CREATE TABLE account_statuses(
 	account_status_id SERIAL PRIMARY KEY,
 	account_status_name VARCHAR(50) NOT NULL UNIQUE, --active, inactive, frozen, closed, etc (maybe add delinquent later)
-	status_description TEXT,
+	account_status_description TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -166,23 +222,90 @@ CREATE TABLE balance_history(
 	UNIQUE (account_id, balance_timestamp)
 );
 
---breakdown into lookup tables later
+
+--============================================================================================================================
+-- TRANSACTIONS
+--============================================================================================================================
+
+--What transaction event took place, NOT which account money came/was taken from
+--ex. DEPOSIT, WITHDRAWAL, TRANSFER, PURCHASE, ATM_WITHDRAWAL, DIRECT_DEPOSIT, 
+--    BILL_PAYMENT, FEE, INTEREST_CREDIT, REFUND, LOAN_PAYMENT
+CREATE TABLE transaction_types(
+	transaction_type_id SERIAL PRIMARY KEY,
+	transaction_type_name VARCHAR(50) NOT NULL UNIQUE,
+	transaction_type_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--The channel where the transaction originated from which is separate from the type of transaction
+--ex. Type: ATM_WITHDRAWAL, Channel: ATM
+--ex. Type: BILL_PAYMENT, Channel: ONLINE
+--ex. ATM, DEBIT_CARD, ONLINE, MOBILE, EMPLOYER, BRANCH, etc
+CREATE TABLE transaction_channels(
+	transaction_channel_id SERIAL PRIMARY KEY,
+	transaction_channel_name VARCHAR(50) NOT NULL UNIQUE,
+	transaction_channel_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--PENDING, COMPLETED, FAILED, CANCELLED, REVERSED
+CREATE TABLE transaction_statuses(
+	transaction_status_id SERIAL PRIMARY KEY,
+	transaction_status_name VARCHAR(50) NOT NULL UNIQUE, 
+	transaction_status_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--exists separately from merchant_categories unlike most of the other tables
+--since theres a situation where a singular merchant like Amazon which can refer to multiple categories
+--it wouldnt be ideal to make them relationally dependant on one or the other
+--ex. WALMART, AMAZON, etc.
+CREATE TABLE merchants(
+	merchant_id SERIAL PRIMARY KEY,
+	merchant_name VARCHAR(150) NOT NULL UNIQUE,
+	merchant_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+--ex. GROCERIES, RESTAURANTS, GAS STATIONS, RETAIL, ENTERTAINMENT, 
+--    HEALTHCARE, TRAVEL, UTILITIES, SUBSCRIPTIONS_SERVICES, GOVERNMENT
+CREATE TABLE merchant_categories(
+	merchant_category_id SERIAL PRIMARY KEY,
+	merchant_category_name VARCHAR(150) NOT NULL UNIQUE,
+	merchant_category_description TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE transactions(
 	transaction_id SERIAL PRIMARY KEY,
-	account_id INTEGER NOT NULL REFERENCES accounts(account_id),
-	transaction_type VARCHAR(100) NOT NULL,
-	amount NUMERIC(15,2) NOT NULL
-		CHECK (amount <> 0),
+	transaction_type_id INTEGER NOT NULL REFERENCES transaction_types(transaction_type_id),
+	transaction_status_id INTEGER NOT NULL REFERENCES transaction_statuses(transaction_status_id),
 	transaction_timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	merchant_name VARCHAR(150), --Business involved in transaction (can be direct deposit so let it be NULL)
-	merchant_category VARCHAR(50), --type of service (groceries, restaurants, etc)
-	transaction_status VARCHAR(20) NOT NULL, --could be ENUM but leave it VARCHAR for flexibility
-	channel VARCHAR(20) NOT NULL, --how the user initiated the transaction (atm, online, mobile, etc)
-	location_city VARCHAR(100), --may be online so no significant transaction location
-	location_state CHAR(2),
+	merchant_id INTEGER REFERENCES merchants(merchant_id),
+	merchant_category_id INTEGER REFERENCES merchant_categories(merchant_category_id),
+	transaction_channel_id INTEGER NOT NULL REFERENCES transaction_channels(transaction_channel_id),
+	city_id INTEGER REFERENCES cities(city_id), --may be online so no significant transaction location
 	transaction_description TEXT,
 	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
---stage 2: employees
+--Entry type in a transaction refers to whether money is leaving (debit) or entering (credit) the account
+--We can establish an ENUM type here since we know the entry type wont expand like other status or types
+CREATE TYPE transaction_entry_type AS ENUM('DEBIT', 'CREDIT');
+
+CREATE TABLE transaction_entries(
+	transaction_entry_id SERIAL PRIMARY KEY,
+	transaction_id INTEGER NOT NULL REFERENCES transactions(transaction_id),
+	account_id INTEGER NOT NULL REFERENCES accounts(account_id),
+	entry_type transaction_entry_type NOT NULL,
+	amount NUMERIC(15,2) NOT NULL 
+		CHECK (amount > 0),
+	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 --stage 3: loans, loan_payments, loan_applications

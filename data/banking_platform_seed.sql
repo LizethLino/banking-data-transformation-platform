@@ -1,4 +1,4 @@
--- ============================================================
+--============================================================================================================================
 -- Static reference data for the banking platform
 --
 -- Populates:
@@ -9,12 +9,19 @@
 --   5. Account Types
 --   6. Account Statuses
 --   7. Account Products
+--   8. Transaction Types
+--   9. Transaction Channels
+--   10. Transaction Statuses
+--   11. Merchant Categories
+--   12. Merchants
 --
 -- This file should be run after banking_platform_schema.sql and before generate_data.py
--- ============================================================
+--============================================================================================================================
 
 
+--============================================================================================================================
 -- REGIONS
+--============================================================================================================================
 
 INSERT INTO regions (region_name)
 VALUES
@@ -25,8 +32,9 @@ VALUES
 ON CONFLICT (region_name) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- STATES
+--============================================================================================================================
 
 INSERT INTO states (state_code, state_name, region_id)
 VALUES
@@ -96,8 +104,9 @@ VALUES
 ON CONFLICT (state_code) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- CITIES
+--============================================================================================================================
 
 INSERT INTO cities (city_name, state_code)
 VALUES
@@ -523,20 +532,22 @@ VALUES
 ON CONFLICT (city_name, state_code) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- ADDRESS TYPES
+--============================================================================================================================
 
 INSERT INTO address_types (address_type_name, address_description)
 VALUES
     ('Home', 'Residential address for personal use.'),
-    ('Work', 'Customer employment or business address.'),
+    ('Business', 'Customer employment or business address.'),
     ('Mailing', 'Address used for receiving mail.')
 
 ON CONFLICT (address_type_name) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- ACCOUNT TYPES
+--============================================================================================================================
 
 INSERT INTO account_types (account_type_name, account_type_description)
 VALUES
@@ -547,10 +558,11 @@ VALUES
 ON CONFLICT (account_type_name) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- ACCOUNT STATUSES
+--============================================================================================================================
 
-INSERT INTO account_statuses (account_status_name, status_description)
+INSERT INTO account_statuses (account_status_name, account_status_description)
 VALUES
     ('Active', 'The account is currently active and in good standing.'),
     ('Inactive', 'The account is not currently active.'),
@@ -560,8 +572,9 @@ VALUES
 ON CONFLICT (account_status_name) DO NOTHING;
 
 
-
+--============================================================================================================================
 -- ACCOUNT PRODUCTS
+--============================================================================================================================
 
 INSERT INTO account_products (
     account_product_name,
@@ -654,3 +667,110 @@ SELECT
     'Premium credit product with a higher maximum credit limit'
 FROM account_types
 WHERE account_type_name = 'Credit';
+
+
+--============================================================================================================================
+-- TRANSACTION TYPES
+--============================================================================================================================
+
+INSERT INTO transaction_types (
+	transaction_type_name,
+	transaction_type_description
+)
+VALUES
+	('Deposit', 'Funds deposited into an account.'),
+	('Withdrawal', 'Funds withdrawn from an account.'),
+	('Transfer', 'Funds transferred between accounts.'),
+	('Purchase', 'Purchase made using an account or payment instrument.'),
+	('ATM_Withdrawal', 'Cash withdrawn through an ATM.'),
+	('Direct_Deposit', 'Electronic deposit originating from an employer or other organization.'),
+	('Bill_Payment', 'Payment made toward a bill or service.'),
+	('Fee', 'Fee charged by the financial institution or service provider.'),
+	('Interest_Credit', 'Interest credited to an account.'),
+	('Refund', 'Funds returned to an account following a previous purchase or payment.'),
+	('Loan_Payment', 'Payment made toward a loan balance.');
+
+
+--============================================================================================================================
+-- TRANSACTION CHANNELS
+--============================================================================================================================
+
+INSERT INTO transaction_channels (
+	transaction_channel_name,
+	transaction_channel_description
+)
+VALUES
+	('ATM', 'Transaction initiated through an automated teller machine.'),
+	('Debit_Card', 'Transaction initiated using a debit card.'),
+	('Online', 'Transaction initiated through online banking.'),
+	('Mobile', 'Transaction initiated through mobile banking.'),
+	('Employer', 'Transaction originating from an employer or payroll system.'),
+	('Branch', 'Transaction initiated at a physical bank branch.');
+
+
+--============================================================================================================================
+-- TRANSACTION STATUSES
+--============================================================================================================================
+
+INSERT INTO transaction_statuses (
+	transaction_status_name,
+	transaction_status_description
+)
+VALUES
+	('Pending', 'Transaction has been initiated but has not yet been completed.'),
+	('Completed', 'Transaction has successfully completed.'),
+	('Failed', 'Transaction could not be completed.'),
+	('Cancelled', 'Transaction was cancelled before completion.'),
+	('Reversed', 'Previously completed transaction was subsequently reversed.');
+
+
+--============================================================================================================================
+-- MERCHANT CATEGORIES
+--============================================================================================================================
+
+INSERT INTO merchant_categories (
+	merchant_category_name,
+	merchant_category_description
+)
+VALUES
+	('Groceries', 'Grocery stores and food retailers.'),
+	('Restaurants', 'Restaurants, cafes, and other dining establishments.'),
+	('Gas_Stations', 'Gas stations and fuel providers.'),
+	('Retail', 'General retail purchases.'),
+	('Entertainment', 'Entertainment, recreation, and leisure services.'),
+	('Healthcare', 'Medical, dental, pharmacy, and other healthcare services.'),
+	('Travel', 'Airlines, hotels, rental cars, and other travel services.'),
+	('Utilities', 'Electricity, gas, water, and other utility services.'),
+	('Subscription_Services', 'Recurring subscription-based services.'),
+	('Government', 'Government agencies and government-related payments.');
+
+
+--============================================================================================================================
+-- MERCHANTS
+--============================================================================================================================
+
+INSERT INTO merchants (
+	merchant_name,
+	merchant_description
+)
+VALUES
+	('Walmart', 'Large general merchandise and grocery retailer.'),
+	('Amazon', 'Online marketplace and retail company.'),
+	('Target', 'General merchandise and retail retailer.'),
+	('Whole Foods', 'Grocery retailer specializing in food and household products.'),
+	('Costco', 'Membership-based warehouse retailer.'),
+	('Shell', 'Fuel and convenience retailer.'),
+	('Exxonmobil', 'Fuel and convenience retailer.'),
+	('McDonalds', 'Fast-food restaurant chain.'),
+	('Starbucks', 'Coffeehouse and beverage retailer.'),
+	('Netflix', 'Subscription-based entertainment streaming service.'),
+	('Spotify', 'Subscription-based music streaming service.'),
+	('Delta Airlines', 'Commercial airline.'),
+	('Marriott', 'Hotel and hospitality company.'),
+	('CVS', 'Pharmacy and healthcare retailer.'),
+	('Walgreens', 'Pharmacy and healthcare retailer.'),
+	('Verizon', 'Telecommunications and wireless service provider.'),
+	('Con Edison', 'Utility provider.'),
+	('New Jersey MVC', 'New Jersey government motor vehicle agency.'),
+	('Uber', 'Transportation and delivery platform.'),
+	('Home Depot', 'Home improvement retailer.');
